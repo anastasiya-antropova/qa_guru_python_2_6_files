@@ -1,6 +1,7 @@
 import os.path
 import shutil
 import zipfile
+import csv
 from zipfile import ZipFile
 from PyPDF2 import PdfReader
 from openpyxl import load_workbook
@@ -20,26 +21,32 @@ def test_create_zip():
         zf.write(add_file_xlsx, arcname='xlsx_add.xlsx')
         zf.write(add_file_csv, arcname='csv_add.csv')
         zf.close()
-    new_place = shutil.move(zip_file, 'resources_hw/')  # перемещение архива
+    if os.path.exists('resources_hw/zip_hw.zip'):
+        os.remove('./resources_hw/zip_hw.zip')
+    shutil.move(zip_file, folder_name)  # перемещение архива
 
 def test_read_pdf():
     with ZipFile(os.path.join(folder_name, zip_file)) as zf:
-        #with ZipFile('./resources_hw/zip_hw.zip') as zf:
-        pdf_reader = PdfReader(zf.open('pdf_add.pdf'))
-        assert len(pdf_reader.pages) == 412
-        assert '5 Further' in pdf_reader.pages[2].extractText()
+        with zf.open('pdf_add.pdf') as pdf_open:
+            pdf_reader = PdfReader(pdf_open)
+            assert len(pdf_reader.pages) == 412
+            assert '5 Further' in pdf_reader.pages[2].extractText()
+
 
 def test_read_xlsx():
     with ZipFile(os.path.join(folder_name, zip_file)) as zf:
-        workbook = load_workbook(zf.open('xlsx_add.xlsx'))
-        sheet = workbook.active
-        assert sheet.cell(row=3, column=2).value == 'Mara'
+        with zf.open('xlsx_add.xlsx') as xlsx_open:
+            workbook = load_workbook(xlsx_open)
+            sheet = workbook.active
+            assert sheet.cell(row=3, column=2).value == 'Mara'
 
 def test_read_csv():
     with ZipFile(os.path.join(folder_name, zip_file)) as zf:
-       csv_open = zf.read('csv_add.csv').decode('utf-8')
-       row_count = sum(1 for row in csv_open)
-       assert row_count == 10898
+        with open(zf.extract('csv_add.csv')) as csv_open:
+            csv_f = csv.reader(csv_open)
+            row_count = sum(1 for row in csv_f)
+            assert row_count == 100
+    os.remove('csv_add.csv')
 
-#def test_delete_zip():
-#    os.remove('./resources_hw/zip_hw.zip')
+
+
